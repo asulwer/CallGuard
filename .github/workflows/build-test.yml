@@ -1,4 +1,4 @@
-# Builds and tests every pull request to master, so a broken build, a failing test or a forgotten EF
+# Builds and tests pull requests to master, so a broken build, a failing test or a forgotten EF
 # migration (CallGuard.Tests checks the model against the migrations) shows up before merging. Needs no
 # secrets and never publishes anything. (Pushes to master are tested by the release workflow.)
 #
@@ -6,6 +6,11 @@
 #   tests     runs CallGuard.Tests (about 1 minute)
 #   android   builds the app in Release, signed with the default debug key, so Release-only problems
 #             such as trimming show up here rather than in the release workflow (about 6 minutes)
+#
+# Both are skipped when the PR changes nothing the app is built from (docs, README, LICENSE, the release
+# workflow, Dependabot's settings...), so such a PR can be merged right away: master's branch protection
+# requires these two checks, and GitHub counts a skipped job as passed. The workflow itself always runs,
+# because a required check whose whole workflow is filtered out by path would wait forever.
 
 name: Build and test
 
@@ -21,14 +26,42 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read   # list the PR's changed files
 
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
+  changes:
+    name: Needs a build?
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          # "Run workflow" by hand always builds.
+          if [ -z "$PR" ]; then echo "build=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          files=$(gh pr diff "$PR" --name-only --repo "$GITHUB_REPOSITORY")
+          echo "$files"
+          # What the app and its tests are built from, plus this workflow so changes to it get tried out.
+          if echo "$files" | grep -qE '^(CallGuard[^/]*/|[^/]*\.slnx$|Directory\.(Packages|Build)\.(props|targets)$|global\.json$|dotnet-tools\.json$|[Nn]u[Gg]et\.config$|\.github/workflows/build-test\.yml$)'; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing the app is built from changed; skipping the build and tests."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
   tests:
     name: Tests
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
 
@@ -54,6 +87,8 @@ jobs:
 
   android:
     name: Android Release build
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: ubuntu-26.04
     timeout-minutes: 45
 

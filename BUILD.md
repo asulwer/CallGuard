@@ -123,4 +123,6 @@ call — and remembers the schema version, so later starts skip the check.
 
 ## Continuous integration
 Every pull request to `master` runs **Build and test** (`.github/workflows/build-test.yml`): the unit tests
-and a Release build of the app, signed with the debug key.
+and a Release build of the app, signed with the debug key. Both are skipped (and count as passed) when the
+pull request changes nothing the app is built from — only docs, the README, the license, the release
+workflow or Dependabot's settings — so such a pull request can be merged straight away.
