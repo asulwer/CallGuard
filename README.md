@@ -4,7 +4,10 @@ An Android app that blocks unwanted incoming calls by number pattern — a whole
 exchange, a country, or a region of a country — **except** calls from people in your contacts.
 
 Blocked calls never ring: your phone stays silent and the caller goes to voicemail. Everything else rings
-as usual. Building the app yourself is described in [BUILD.md](BUILD.md).
+as usual.
+
+**Full documentation, with screenshots: https://asulwer.github.io/CallGuard/** — building the app yourself
+is described in [BUILD.md](BUILD.md).
 
 ## Install
 1. On your Android phone (Android 10 or later), open **https://github.com/asulwer/CallGuard/releases**.
