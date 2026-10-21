@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon foreground: a shield guarding a phone handset, with a "blocked" badge.
+     Everything stays inside the 66dp safe zone so no launcher mask clips it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="108dp" android:height="108dp"
+        android:viewportWidth="108" android:viewportHeight="108">
+  <!-- soft shadow under the shield -->
+  <path android:fillColor="#33000000"
+        android:pathData="M54,30L75,37.5L75,53.5C75,66.5 66.5,76.5 54,82.5C41.5,76.5 33,66.5 33,53.5L33,37.5Z" />
+  <!-- shield -->
+  <path android:fillColor="#FFFFFF"
+        android:pathData="M54,28L74,35.5L74,52C74,65 65.5,74.5 54,80.5C42.5,74.5 34,65 34,52L34,35.5Z" />
+  <!-- phone handset (Material "call" glyph, 24dp grid scaled into the shield) -->
+  <group android:scaleX="1.1" android:scaleY="1.1" android:translateX="39.6" android:translateY="38.2">
+    <path android:fillColor="@color/icon_handset"
+          android:pathData="M20.01,15.38c-1.23,0 -2.42,-0.2 -3.53,-0.56 -0.35,-0.12 -0.74,-0.03 -1.01,0.24l-1.57,1.97c-2.83,-1.35 -5.48,-3.9 -6.89,-6.83l1.95,-1.66c0.27,-0.28 0.35,-0.67 0.24,-1.02 -0.37,-1.11 -0.56,-2.3 -0.56,-3.53 0,-0.54 -0.45,-0.99 -0.99,-0.99H4.19C3.65,3 3,3.24 3,3.99 3,13.28 10.73,21 20.01,21c0.71,0 0.99,-0.63 0.99,-1.18v-3.45c0,-0.54 -0.45,-0.99 -0.99,-0.99z" />
+  </group>
+  <!-- "blocked" badge: white ring, red disc, white slash -->
+  <path android:fillColor="#FFFFFF"
+        android:pathData="M69,69m-10.5,0a10.5,10.5 0,1 1,21 0a10.5,10.5 0,1 1,-21 0" />
+  <path android:fillColor="@color/icon_badge"
+        android:pathData="M69,69m-8.5,0a8.5,8.5 0,1 1,17 0a8.5,8.5 0,1 1,-17 0" />
+  <path android:strokeColor="#FFFFFF" android:strokeWidth="2.6" android:strokeLineCap="round"
+        android:pathData="M64.5,73.5L73.5,64.5" />
+</vector>

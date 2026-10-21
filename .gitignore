@@ -1,0 +1,23 @@
+# Build output
+bin/
+obj/
+TestResults/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Built apps — published through GitHub Releases, never committed
+*.apk
+*.aab
+
+# Signing keys must never be committed (CI gets the key from an encrypted secret)
+*.keystore
+*.jks
+*.keyInfo
+
+# Local databases (e.g. the one dotnet-ef creates while generating migrations)
+*.db
+*.db-shm
+*.db-wal

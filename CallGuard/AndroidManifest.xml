@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Needed to let saved contacts through even when they match a blocked prefix. -->
+  <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+  <!-- The activity and the call-screening service are declared with C# attributes
+       in MainActivity.cs and BlockerService.cs and merged in at build time. -->
+  <application android:allowBackup="true" android:label="Call Guard" android:supportsRtl="true"
+               android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon" />
+</manifest>

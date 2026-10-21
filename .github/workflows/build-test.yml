@@ -1,0 +1,113 @@
+# Builds and tests every push and pull request to master, so a broken build, a failing test or a
+# forgotten EF migration (CallGuard.Tests checks the model against the migrations) shows up early.
+# Needs no secrets and never publishes anything.
+#
+# Two jobs run side by side:
+#   tests     runs CallGuard.Tests (about 1 minute)
+#   android   builds the app in Release, signed with the default debug key, so Release-only problems
+#             such as trimming show up here rather than in the release workflow (about 6 minutes)
+
+name: Build and test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the run that's still checking the old commit.
+concurrency:
+  group: build-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-tests-${{ hashFiles('Directory.Packages.props') }}
+          restore-keys: nuget-tests-
+
+      - name: Test
+        run: dotnet test --project CallGuard.Tests
+
+  android:
+    name: Android Release build
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+
+    defaults:
+      run:
+        shell: pwsh
+
+    env:
+      PROJECT: CallGuard/CallGuard.csproj
+
+    steps:
+      # Ubuntu 26.04 mounts /tmp as a RAM disk with a ~7.8 GB per-user quota, and the workload
+      # install stages its packs there. Same fix as the release workflow.
+      # https://github.com/actions/runner-images/issues/14777
+      - name: Move temp off the /tmp RAM disk
+        run: |
+          $tmp = Join-Path $env:RUNNER_TEMP 'tmp'
+          New-Item -ItemType Directory -Force $tmp | Out-Null
+          "TMPDIR=$tmp" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - uses: actions/checkout@v7
+
+      # Installed where the runner user owns it, so the workload install needs no sudo.
+      - uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/.dotnet
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: microsoft
+          java-version: '17'
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-android-${{ hashFiles('Directory.Packages.props') }}
+          restore-keys: nuget-android-
+
+      - name: Install workloads
+        run: dotnet workload restore $env:PROJECT
+
+      - name: Install Android SDK dependencies
+        run: >
+          dotnet build $env:PROJECT -t:InstallAndroidDependencies -f net10.0-android
+          "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT"
+          "-p:JavaSdkDirectory=$env:JAVA_HOME"
+          -p:AcceptAndroidSDKLicenses=true
+
+      - name: Build Release
+        run: >
+          dotnet build $env:PROJECT -f net10.0-android -c Release
+          "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT"
+          "-p:JavaSdkDirectory=$env:JAVA_HOME"

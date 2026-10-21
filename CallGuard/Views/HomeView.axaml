@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CallGuard.Views.HomeView">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="8">
+
+      <TextBlock Classes="header" Text="Setup" Margin="0" />
+      <TextBlock x:Name="RoleStatus" Classes="status" />
+      <Button x:Name="RoleButton" Classes="wide" Content="Set as Caller ID &amp; spam app" Click="OnRequestRole" />
+      <TextBlock x:Name="ContactsStatus" Classes="status" />
+      <Button x:Name="ContactsButton" Classes="wide" Content="Allow contacts access" Click="OnRequestContacts" />
+      <TextBlock x:Name="NoPatternsStatus" Classes="status problem" IsVisible="False"
+                 Text="✖ No blocked patterns are switched on — every call rings" />
+
+      <TextBlock Classes="header" Text="Blocked calls" />
+      <Grid ColumnDefinitions="*,*,*">
+        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+          <TextBlock x:Name="TodayCount" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" />
+          <TextBlock Classes="hint" Text="today" HorizontalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+          <TextBlock x:Name="WeekCount" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" />
+          <TextBlock Classes="hint" Text="last 7 days" HorizontalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+          <TextBlock x:Name="MonthCount" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" />
+          <TextBlock Classes="hint" Text="last 30 days" HorizontalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+
+      <TextBlock Classes="header" Text="Test a number" />
+      <TextBlock Classes="hint" Text="See what Call Guard would do if this number called you now." />
+      <TextBox x:Name="TestBox" PlaceholderText="e.g. 602 555 1234" />
+      <Button Classes="wide" Content="Check" Click="OnTest" />
+      <TextBlock x:Name="TestResult" Classes="status" IsVisible="False" />
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

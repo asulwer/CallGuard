@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="using:CallGuard.Views"
+             x:Class="CallGuard.Views.CallsView">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="8">
+
+      <TextBlock Classes="header" Text="Recent calls" Margin="0" />
+      <TextBlock Classes="hint" Text="Tap Block or Allow to add that exact number to your patterns." />
+      <TextBlock x:Name="Message" Classes="status" IsVisible="False" />
+      <TextBlock x:Name="Empty" Classes="hint" Text="(no calls screened yet)" />
+
+      <ItemsControl x:Name="CallList">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="v:CallRow">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,6">
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"
+                           Classes.problem="{Binding IsRejected}" />
+                <TextBlock Text="{Binding Detail}" Classes="hint" />
+              </StackPanel>
+              <Button Grid.Column="1" Content="{Binding ActionText}" IsVisible="{Binding HasNumber}"
+                      Tag="{Binding}" Click="OnRowAction" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Button x:Name="ClearButton" Classes="wide" Content="Clear log" Click="OnClear" Margin="0,8,0,0" />
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

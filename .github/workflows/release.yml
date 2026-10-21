@@ -1,0 +1,191 @@
+# Builds a signed APK and publishes it as a GitHub Release that anyone can download and install.
+#
+# To make a release, tag the commit with its version and push the tag:
+#   git tag v1.1
+#   git push origin v1.1
+# The tag names the release and sets the app's version prefix (v1.1 -> version 1.1.yyMMdd). The
+# versionCode comes from CallGuard.csproj (whole minutes since 2020-01-01 UTC), so each release is
+# accepted as an update to the one before. "Run workflow" in the Actions tab builds the same APK and
+# keeps it as a workflow artifact, without publishing a release.
+#
+# Required repository secrets:
+#   CALLGUARD_KEYSTORE_BASE64   base64 of the signing keystore (Visual Studio's "callguard" signing identity)
+#   CALLGUARD_KEYSTORE_PASS     its password
+# Required repository variable (public, not a secret):
+#   SIGNING_CERT_SHA256         SHA-256 of the signing certificate. The release fails unless the APK is
+#                               signed with it, because phones refuse an update signed with another key.
+
+name: Release APK
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+# Never let two releases of the same tag race each other.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # create the release and upload the APK
+
+jobs:
+  release:
+    # Linux runners bill at 1x (and are free for public repositories). Pinned rather than
+    # ubuntu-latest so an image migration never changes the build without a commit.
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+
+    defaults:
+      run:
+        shell: pwsh
+
+    env:
+      PROJECT: CallGuard/CallGuard.csproj
+      PACKAGE_NAME: com.acclscompany.callguard
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+    steps:
+      # Ubuntu 26.04 mounts /tmp as a RAM disk with a ~7.8 GB per-user quota, and the workload
+      # install stages its packs there ("Disk quota exceeded"). Point temp at the runner's disk.
+      # https://github.com/actions/runner-images/issues/14777
+      - name: Move temp off the /tmp RAM disk
+        run: |
+          $tmp = Join-Path $env:RUNNER_TEMP 'tmp'
+          New-Item -ItemType Directory -Force $tmp | Out-Null
+          "TMPDIR=$tmp" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - uses: actions/checkout@v7
+
+      # Work out the version first, so a badly named tag fails in seconds.
+      - name: Version from tag
+        id: version
+        run: |
+          $prefix = '1.0'
+          $name = "manual-$($env:GITHUB_SHA.Substring(0, 7))"
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $prefix = $env:GITHUB_REF_NAME -replace '^v', ''
+            if ($prefix -notmatch '^\d+(\.\d+)?$') {
+              throw "Tag '$env:GITHUB_REF_NAME' isn't a version like v1 or v1.2 (the build date is added as the last part)"
+            }
+            $name = $env:GITHUB_REF_NAME
+          }
+          "prefix=$prefix" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Version prefix $prefix, release name $name"
+
+      # Install the SDK somewhere the runner user owns, so the workload install needs no sudo.
+      - uses: actions/setup-dotnet@v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/.dotnet
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: microsoft
+          java-version: '17'
+
+      # Don't release something whose tests fail.
+      - name: Test
+        run: dotnet test --project CallGuard.Tests
+
+      - name: Install workloads
+        run: dotnet workload restore $env:PROJECT
+
+      - name: Install Android SDK dependencies
+        run: >
+          dotnet build $env:PROJECT -t:InstallAndroidDependencies -f net10.0-android
+          "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT"
+          "-p:JavaSdkDirectory=$env:JAVA_HOME"
+          -p:AcceptAndroidSDKLicenses=true
+
+      - name: Decode signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.CALLGUARD_KEYSTORE_BASE64 }}
+        run: |
+          if (-not $env:KEYSTORE_BASE64) { throw "The CALLGUARD_KEYSTORE_BASE64 secret isn't set (see 'Releases' in README.md)" }
+          $path = Join-Path $env:RUNNER_TEMP 'callguard.keystore'
+          [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($env:KEYSTORE_BASE64))
+          "KEYSTORE_PATH=$path" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      # Fails in seconds and names the bad secret, instead of failing at the end of the build.
+      - name: Check signing secrets
+        env:
+          CALLGUARD_KEYSTORE_PASS: ${{ secrets.CALLGUARD_KEYSTORE_PASS }}
+        run: |
+          if (-not $env:CALLGUARD_KEYSTORE_PASS) { throw "The CALLGUARD_KEYSTORE_PASS secret isn't set (see 'Releases' in README.md)" }
+          $keytool = Join-Path $env:JAVA_HOME 'bin/keytool'
+          $entries = & $keytool -list -keystore $env:KEYSTORE_PATH -storepass:env CALLGUARD_KEYSTORE_PASS 2>&1
+          if ($LASTEXITCODE -ne 0) { throw "CALLGUARD_KEYSTORE_PASS is wrong, or CALLGUARD_KEYSTORE_BASE64 is damaged: $entries" }
+          & $keytool -list -keystore $env:KEYSTORE_PATH -storepass:env CALLGUARD_KEYSTORE_PASS -alias callguard *> $null
+          if ($LASTEXITCODE -ne 0) { throw "The keystore has no 'callguard' key. Keystore contents: $entries" }
+          Write-Host "Signing secrets OK"
+
+      # CallGuard.csproj signs with this keystore when CALLGUARD_KEYSTORE_PASS is set; the password is
+      # passed to the signing tool by reference, so it never appears on a command line or in the log.
+      - name: Build signed APK
+        env:
+          CALLGUARD_KEYSTORE_PASS: ${{ secrets.CALLGUARD_KEYSTORE_PASS }}
+        run: >
+          dotnet publish $env:PROJECT -f net10.0-android -c Release
+          "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT"
+          "-p:JavaSdkDirectory=$env:JAVA_HOME"
+          "-p:CallGuardKeyStore=$env:KEYSTORE_PATH"
+          "-p:VersionPrefix=${{ steps.version.outputs.prefix }}"
+
+      # A release signed with any other key couldn't update the app on anyone's phone.
+      - name: Collect APK and check its signature
+        env:
+          EXPECTED_SHA256: ${{ vars.SIGNING_CERT_SHA256 }}
+        run: |
+          if (-not $env:EXPECTED_SHA256) { throw "The SIGNING_CERT_SHA256 repository variable isn't set (see 'Releases' in README.md)" }
+          $apk = Get-ChildItem CallGuard/bin/Release/net10.0-android -Recurse -Filter "$env:PACKAGE_NAME-Signed.apk" |
+            Where-Object { $_.FullName -match '[\\/]publish[\\/]' } |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $apk) { throw "Signed APK not found" }
+
+          $buildTools = Get-ChildItem (Join-Path $env:ANDROID_SDK_ROOT 'build-tools') -Directory |
+            Sort-Object { [version]($_.Name -replace '[^0-9.].*$', '') } | Select-Object -Last 1
+          $certs = & (Join-Path $buildTools.FullName 'apksigner') verify --print-certs $apk.FullName 2>&1
+          if ($LASTEXITCODE -ne 0) { throw "APK signature doesn't verify: $certs" }
+          $actual = ($certs | Select-String 'Signer #1 certificate SHA-256 digest: (\w+)').Matches[0].Groups[1].Value
+          $expected = $env:EXPECTED_SHA256.ToLowerInvariant() -replace '[^0-9a-f]', ''
+          if ($actual -ne $expected) { throw "APK is signed with $actual, not the release key $expected" }
+          Write-Host "Signed with the release key ($actual)"
+
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $out = "dist/CallGuard-${{ steps.version.outputs.name }}.apk"
+          Copy-Item $apk.FullName $out
+          Write-Host "Built $out ($([math]::Round($apk.Length / 1MB, 1)) MB)"
+
+      - name: Keep APK as a workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: callguard-apk
+          path: dist/*.apk
+          retention-days: 30
+
+      - name: Publish GitHub release
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = @'
+          ## Install
+          1. On your Android phone (Android 10 or later), download the `.apk` below.
+          2. Open it and allow your browser or Files app to install apps when Android asks.
+             Google Play Protect may warn about an app from an unknown developer; choose **Install anyway**.
+          3. Open Call Guard and follow the Setup steps on its Home tab.
+
+          Updating: install the new `.apk` over the old one. Your patterns and call log are kept.
+          '@
+          gh release create $env:GITHUB_REF_NAME dist/*.apk `
+            --title "Call Guard ${{ steps.version.outputs.prefix }}" `
+            --notes $notes --generate-notes --verify-tag
+
+      - name: Remove keystore
+        if: always()
+        run: if ($env:KEYSTORE_PATH -and (Test-Path $env:KEYSTORE_PATH)) { Remove-Item $env:KEYSTORE_PATH -Force }

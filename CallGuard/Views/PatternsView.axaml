@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:data="using:CallGuard.Data"
+             x:Class="CallGuard.Views.PatternsView">
+
+  <UserControl.Resources>
+    <DataTemplate x:Key="PatternRow" x:DataType="data:NumberPattern">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4">
+        <CheckBox Grid.Column="0" VerticalAlignment="Center" Margin="0,0,4,0"
+                  IsChecked="{Binding IsEnabled, Mode=OneWay}" Tag="{Binding Id}" Click="OnToggle" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Classes.off="{Binding !IsEnabled}">
+          <TextBlock Text="{Binding Pattern}" FontFamily="monospace" FontSize="16" />
+          <TextBlock Classes="hint" Text="{Binding Label}"
+                     IsVisible="{Binding Label, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+        <Button Grid.Column="2" Content="Remove" Tag="{Binding Id}" Click="OnRemove" />
+      </Grid>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="StackPanel.off">
+      <Setter Property="Opacity" Value="0.45" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="8">
+
+      <TextBlock Classes="header" Text="Add a pattern" Margin="0" />
+      <TextBlock Classes="hint"
+                 Text="US numbers.  * = any digits,  ? = one digit.  Example: 602* covers the whole 602 area code. For another country start with + and its country code: +44* covers the whole UK, +4420* just London. Saved contacts always ring." />
+      <TextBox x:Name="PatternBox" PlaceholderText="Pattern, e.g. 602* or +44*" FontFamily="monospace" />
+      <TextBox x:Name="LabelBox" PlaceholderText="Note (optional)" />
+      <StackPanel Orientation="Horizontal" Spacing="24">
+        <RadioButton x:Name="BlockRadio" Content="Block" IsChecked="True" />
+        <RadioButton x:Name="AllowRadio" Content="Always allow" />
+      </StackPanel>
+      <Button Classes="wide" Content="Add" Click="OnAdd" />
+      <TextBlock x:Name="AddMessage" Classes="status" IsVisible="False" />
+
+      <TextBlock Classes="header" Text="Blocked" />
+      <TextBlock Classes="hint" Text="Untick a pattern to switch it off without deleting it." />
+      <TextBlock x:Name="NoBlocked" Classes="hint" Text="(none yet — nothing will be blocked)" />
+      <ItemsControl x:Name="BlockList" ItemTemplate="{StaticResource PatternRow}" />
+
+      <TextBlock Classes="header" Text="Always allowed" />
+      <TextBlock Classes="hint" Text="These ring even when they match a blocked pattern or another blocking rule." />
+      <TextBlock x:Name="NoAllowed" Classes="hint" Text="(none)" />
+      <ItemsControl x:Name="AllowList" ItemTemplate="{StaticResource PatternRow}" />
+
+      <TextBlock Classes="header" Text="Backup" />
+      <TextBlock Classes="hint" Text="Save your patterns to a text file (e.g. on Google Drive), or load them on a new phone." />
+      <Grid ColumnDefinitions="*,8,*">
+        <Button Grid.Column="0" Classes="wide" Content="Export…" Click="OnExport" />
+        <Button Grid.Column="2" Classes="wide" Content="Import…" Click="OnImport" />
+      </Grid>
+      <TextBlock x:Name="BackupMessage" Classes="status" IsVisible="False" />
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

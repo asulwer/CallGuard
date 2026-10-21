@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="icon_gradient_start">#1D4ED8</color>
+  <color name="icon_gradient_end">#0E7490</color>
+  <color name="icon_handset">#1E50C8</color>
+  <color name="icon_badge">#E11D48</color>
+</resources>

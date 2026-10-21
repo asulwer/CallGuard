@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="using:CallGuard.Views"
+             x:Class="CallGuard.Views.MainView">
+  <TabControl Padding="0">
+    <TabItem Header="Home"><v:HomeView /></TabItem>
+    <TabItem Header="Patterns"><v:PatternsView /></TabItem>
+    <TabItem Header="Calls"><v:CallsView /></TabItem>
+  </TabControl>
+</UserControl>

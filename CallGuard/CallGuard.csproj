@@ -1,0 +1,84 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <!-- Android 10 (API 29) is the minimum for the call-screening role. Pixel 10 is far above this. -->
+    <SupportedOSPlatformVersion>29</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CallGuard</RootNamespace>
+    <ApplicationId>com.acclscompany.callguard</ApplicationId>
+    <!-- An .apk can be installed directly; the default for Release (.aab) is only for the Play Store. -->
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+
+    <!-- Versions (auto-generated each build). Kept UNIFORM across all target
+         frameworks — VS requires a single PackageVersion across TFMs, and Apple
+         requires the short version to be <= 3 numeric parts.
+           Display version : prefix.yyMMdd                 e.g. 1.0.260627
+           Build number    : whole minutes since 2020-01-01 UTC — a monotonically
+                             increasing 32-bit integer (Android versionCode /
+                             iOS CFBundleVersion) that changes on every build. -->
+    <VersionPrefix>1.0</VersionPrefix>
+    <BuildDate>$([System.DateTime]::Now.ToString('yyMMdd'))</BuildDate>
+    <ApplicationDisplayVersion>$(VersionPrefix).$(BuildDate)</ApplicationDisplayVersion>
+    <Version>$(VersionPrefix).$(BuildDate)</Version>
+    <PackageVersion>$(VersionPrefix).$(BuildDate)</PackageVersion>
+    <_BuildMinutes>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::new(2020,1,1))).TotalMinutes)</_BuildMinutes>
+    <ApplicationVersion>$([System.Math]::Floor($(_BuildMinutes)))</ApplicationVersion>
+
+    <!-- Pin the .NET assembly attributes: their components max out at 65535, so the
+         date-based display version can't flow into them. -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <!-- Pixel phones are 64-bit ARM; leaving out the other CPU types makes the release APK much smaller.
+       To try a release build in the (x64) emulator, build with -p:ForEmulator=true -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeIdentifiers Condition="'$(ForEmulator)' != 'true'">android-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(ForEmulator)' == 'true'">android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <!-- Release signing with the key Visual Studio's Archive Manager created (Distribute → Ad Hoc →
+       signing identity "callguard"), so command-line release builds can update the installed app too.
+       The password is read from the CALLGUARD_KEYSTORE_PASS environment variable and never stored in
+       the project; without it, release builds fall back to the debug key and warn. See README. -->
+  <PropertyGroup>
+    <CallGuardKeyStore Condition="'$(CallGuardKeyStore)' == ''">$(LOCALAPPDATA)\Xamarin\Mono for Android\Keystore\callguard\callguard.keystore</CallGuardKeyStore>
+    <CallGuardKeyAlias Condition="'$(CallGuardKeyAlias)' == ''">callguard</CallGuardKeyAlias>
+    <CallGuardCanSign Condition="Exists('$(CallGuardKeyStore)') and '$(CALLGUARD_KEYSTORE_PASS)' != ''">true</CallGuardCanSign>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(CallGuardCanSign)' == 'true'">
+    <AndroidKeyStore>true</AndroidKeyStore>
+    <AndroidSigningKeyStore>$(CallGuardKeyStore)</AndroidSigningKeyStore>
+    <AndroidSigningKeyAlias>$(CallGuardKeyAlias)</AndroidSigningKeyAlias>
+    <AndroidSigningStorePass>env:CALLGUARD_KEYSTORE_PASS</AndroidSigningStorePass>
+    <AndroidSigningKeyPass>env:CALLGUARD_KEYSTORE_PASS</AndroidSigningKeyPass>
+  </PropertyGroup>
+  <Target Name="WarnAboutDebugSigning" BeforeTargets="Build"
+          Condition="'$(Configuration)' == 'Release' and '$(CallGuardCanSign)' != 'true'">
+    <Warning Condition="!Exists('$(CallGuardKeyStore)')"
+             Text="Release build is signed with the shared debug key: $(CallGuardKeyStore) doesn't exist. Android won't install it over your signed app. See 'Release signing' in README.md." />
+    <Warning Condition="Exists('$(CallGuardKeyStore)')"
+             Text="Release build is signed with the shared debug key: set the CALLGUARD_KEYSTORE_PASS environment variable, or use Archive → Distribute → Ad Hoc. Android won't install it over your signed app. See 'Release signing' in README.md." />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Android.Widget clashes with Avalonia's controls (Button, TextBox, ...). -->
+    <Using Remove="Android.Widget" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CallGuard.Core\CallGuard.Core.csproj" />
+  </ItemGroup>
+
+</Project>
