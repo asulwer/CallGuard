@@ -7,7 +7,7 @@ using CallGuard.Data;
 
 namespace CallGuard.Views;
 
-/// <summary>Add and remove block / always-allow patterns, and export or import them.</summary>
+/// <summary>Add, edit and remove block / always-allow patterns, and export or import them.</summary>
 public partial class PatternsView : UserControl
 {
     static readonly FilePickerFileType TextFile = new("Text file")
@@ -18,6 +18,9 @@ public partial class PatternsView : UserControl
 
     /// <summary>A pattern that matches every number, waiting for a second tap on Add to confirm.</summary>
     string? pendingConfirm;
+
+    /// <summary>The pattern whose note the form is editing, or null when the form adds patterns.</summary>
+    NumberPattern? editing;
 
     public PatternsView() => InitializeComponent();
 
@@ -49,6 +52,13 @@ public partial class PatternsView : UserControl
 
     void OnAdd(object? sender, RoutedEventArgs e)
     {
+        if (editing != null)
+        {
+            Store.Patterns.SetLabel(editing.Id, LabelBox.Text);
+            EndEdit();
+            return;
+        }
+
         var action = AllowRadio.IsChecked == true ? PatternAction.Allow : PatternAction.Block;
         var cleaned = RuleEngine.CleanPattern(PatternBox.Text);
         bool confirmed = cleaned != null && cleaned == pendingConfirm;
@@ -84,7 +94,44 @@ public partial class PatternsView : UserControl
 
     void OnRemove(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: int id }) Store.Patterns.Remove(id);
+        if (sender is not Button { Tag: int id }) return;
+        if (editing?.Id == id) EndEdit();
+        Store.Patterns.Remove(id);
+    }
+
+    /// <summary>Turns the form at the top into "Edit note" for that pattern.</summary>
+    void OnEdit(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: NumberPattern pattern }) return;
+        editing = pattern;
+        pendingConfirm = null;
+        FormHeader.Text = "Edit note";
+        FormHint.IsVisible = false;
+        PatternBox.Text = pattern.Pattern;
+        PatternBox.IsEnabled = false;
+        LabelBox.Text = pattern.Label ?? "";
+        ActionChoice.IsVisible = false;
+        AddButton.Content = "Save note";
+        CancelEditButton.IsVisible = true;
+        Ui.Show(AddMessage, null, ok: true);
+        Scroller.ScrollToHome();
+        LabelBox.Focus();
+    }
+
+    void OnCancelEdit(object? sender, RoutedEventArgs e) => EndEdit();
+
+    /// <summary>Puts the form back to adding patterns.</summary>
+    void EndEdit()
+    {
+        editing = null;
+        FormHeader.Text = "Add a pattern";
+        FormHint.IsVisible = true;
+        PatternBox.Text = "";
+        PatternBox.IsEnabled = true;
+        LabelBox.Text = "";
+        ActionChoice.IsVisible = true;
+        AddButton.Content = "Add";
+        CancelEditButton.IsVisible = false;
     }
 
     async void OnExport(object? sender, RoutedEventArgs e)

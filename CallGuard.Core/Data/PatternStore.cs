@@ -70,6 +70,19 @@ public sealed class PatternStore(DbContextOptions<CallGuardDbContext> options)
         return check.Patterns.Any(p => p.Id == id);
     }
 
+    /// <summary>Changes a pattern's note; a blank note clears it. Returns false if there was no pattern with that id.</summary>
+    public bool SetLabel(int id, string? label)
+    {
+        var value = string.IsNullOrWhiteSpace(label) ? null : label.Trim();
+        int changed;
+        using (var db = Open())
+        {
+            changed = db.Patterns.Where(p => p.Id == id).ExecuteUpdate(u => u.SetProperty(p => p.Label, value));
+        }
+        if (changed > 0) Changed?.Invoke();
+        return changed > 0;
+    }
+
     /// <summary>Returns false if there was no pattern with that id.</summary>
     public bool Remove(int id)
     {
