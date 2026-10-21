@@ -1,0 +1,40 @@
+# GitHub Pages (Jekyll) configuration for the Call Guard documentation site.
+# Published from the master branch, /docs folder: https://asulwer.github.io/CallGuard/
+title: Call Guard
+description: Block unwanted calls on Android by area code, country or region — contacts always ring.
+baseurl: "/CallGuard"
+url: "https://asulwer.github.io"
+
+# Same theme as the RoslynRules docs (GitHub Pages supports it as a remote theme).
+remote_theme: just-the-docs/just-the-docs@v0.10.0
+
+aux_links:
+  "Download":
+    - "https://github.com/asulwer/CallGuard/releases/latest"
+  "GitHub":
+    - "https://github.com/asulwer/CallGuard"
+aux_links_new_tab: true
+
+search_enabled: true
+color_scheme: light
+
+# Note / tip / warning boxes ({: .note } etc. above a paragraph).
+callouts:
+  note:
+    title: Note
+    color: blue
+  tip:
+    title: Tip
+    color: green
+  warning:
+    title: Warning
+    color: red
+
+back_to_top: true
+back_to_top_text: "Back to top"
+
+footer_content: "Call Guard — free and open source. <a href=\"https://github.com/asulwer/CallGuard\">Source on GitHub</a>."
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-remote-theme
