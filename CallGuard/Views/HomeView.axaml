@@ -34,6 +34,8 @@
       <Button Classes="wide" Content="Check" Click="OnTest" />
       <TextBlock x:Name="TestResult" Classes="status" IsVisible="False" />
 
+      <TextBlock x:Name="VersionText" Classes="hint" Margin="0,24,0,0" HorizontalAlignment="Center" />
+
     </StackPanel>
   </ScrollViewer>
 </UserControl>

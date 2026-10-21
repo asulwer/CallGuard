@@ -158,9 +158,11 @@ git push origin v1.1
 ```
 The **Release APK** workflow (`.github/workflows/release.yml`) then runs the tests, builds the APK
 signed with the `callguard` key, checks the signature against the key's fingerprint, and publishes a
-release named after the tag with the APK attached. The tag sets the version shown in the app
-(`v1.1` → `1.1.yyMMdd`); use `v1` or `v1.2` style tags. **Run workflow** in the Actions tab builds the
-same APK as a downloadable workflow artifact without publishing a release.
+release named after the tag with the APK attached. The tag is the version: the app reports exactly
+what follows the `v` (`v1.1` → version `1.1`, shown in Android's app info and on the Home tab), and the
+workflow refuses to publish if the built APK reports anything else. Use numeric tags such as `v1.1` or
+`v1.0.3`. **Run workflow** in the Actions tab builds the same APK (with the usual date-based version) as a
+downloadable workflow artifact without publishing a release.
 
 Every push and pull request to `master` also runs **Build and test** (`.github/workflows/build-test.yml`):
 the unit tests and a Release build, so problems show up before you tag a release.

@@ -10,7 +10,28 @@ public partial class HomeView : UserControl
 {
     static Android.Content.Context Ctx => Android.App.Application.Context;
 
-    public HomeView() => InitializeComponent();
+    public HomeView()
+    {
+        InitializeComponent();
+        VersionText.Text = $"Call Guard {AppVersion()}";
+    }
+
+    /// <summary>The version Android reports for the app (its versionName), e.g. "1.1".</summary>
+    static string AppVersion()
+    {
+        try
+        {
+            var pm = Ctx.PackageManager!;
+            var info = OperatingSystem.IsAndroidVersionAtLeast(33)
+                ? pm.GetPackageInfo(Ctx.PackageName!, Android.Content.PM.PackageManager.PackageInfoFlags.Of(0L))
+                : pm.GetPackageInfo(Ctx.PackageName!, 0);
+            return $"{info!.VersionName} (build {info.LongVersionCode})";
+        }
+        catch
+        {
+            return "";
+        }
+    }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {

@@ -3,10 +3,11 @@
 # To make a release, tag the commit with its version and push the tag:
 #   git tag v1.1
 #   git push origin v1.1
-# The tag names the release and sets the app's version prefix (v1.1 -> version 1.1.yyMMdd). The
-# versionCode comes from CallGuard.csproj (whole minutes since 2020-01-01 UTC), so each release is
-# accepted as an update to the one before. "Run workflow" in the Actions tab builds the same APK and
-# keeps it as a workflow artifact, without publishing a release.
+# The tag is the version: the app reports exactly what follows the "v" (v1.1 -> 1.1), and the
+# workflow checks the built APK before publishing. The hidden versionCode comes from CallGuard.csproj
+# (whole minutes since 2020-01-01 UTC), so each release is accepted as an update to the one before.
+# "Run workflow" in the Actions tab builds the same APK (with the usual date-based version) and keeps
+# it as a workflow artifact, without publishing a release.
 #
 # Required repository secrets:
 #   CALLGUARD_KEYSTORE_BASE64   base64 of the signing keystore (Visual Studio's "callguard" signing identity)
@@ -63,18 +64,18 @@ jobs:
       - name: Version from tag
         id: version
         run: |
-          $prefix = '1.0'
+          $version = ''
           $name = "manual-$($env:GITHUB_SHA.Substring(0, 7))"
           if ($env:GITHUB_REF_TYPE -eq 'tag') {
-            $prefix = $env:GITHUB_REF_NAME -replace '^v', ''
-            if ($prefix -notmatch '^\d+(\.\d+)?$') {
-              throw "Tag '$env:GITHUB_REF_NAME' isn't a version like v1 or v1.2 (the build date is added as the last part)"
+            $version = $env:GITHUB_REF_NAME -replace '^v', ''
+            if ($version -notmatch '^\d+(\.\d+){0,3}$') {
+              throw "Tag '$env:GITHUB_REF_NAME' isn't a version like v1.1 or v1.0.3"
             }
             $name = $env:GITHUB_REF_NAME
           }
-          "prefix=$prefix" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Host "Version prefix $prefix, release name $name"
+          Write-Host "App version '$version' (empty = date-based), release name $name"
 
       # Install the SDK somewhere the runner user owns, so the workload install needs no sudo.
       - uses: actions/setup-dotnet@v6
@@ -129,17 +130,24 @@ jobs:
       - name: Build signed APK
         env:
           CALLGUARD_KEYSTORE_PASS: ${{ secrets.CALLGUARD_KEYSTORE_PASS }}
-        run: >
-          dotnet publish $env:PROJECT -f net10.0-android -c Release
-          "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT"
-          "-p:JavaSdkDirectory=$env:JAVA_HOME"
-          "-p:CallGuardKeyStore=$env:KEYSTORE_PATH"
-          "-p:VersionPrefix=${{ steps.version.outputs.prefix }}"
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $publish = @(
+            'publish', $env:PROJECT, '-f', 'net10.0-android', '-c', 'Release',
+            "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT",
+            "-p:JavaSdkDirectory=$env:JAVA_HOME",
+            "-p:CallGuardKeyStore=$env:KEYSTORE_PATH")
+          # A release reports exactly its tag's version (Android's versionName).
+          if ($env:APP_VERSION) { $publish += "-p:ApplicationDisplayVersion=$env:APP_VERSION" }
+          dotnet @publish
+          if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 
-      # A release signed with any other key couldn't update the app on anyone's phone.
-      - name: Collect APK and check its signature
+      # A release signed with any other key couldn't update the app on anyone's phone, and a
+      # release must report the same version as its tag.
+      - name: Collect APK and check its signature and version
         env:
           EXPECTED_SHA256: ${{ vars.SIGNING_CERT_SHA256 }}
+          APP_VERSION: ${{ steps.version.outputs.version }}
         run: |
           if (-not $env:EXPECTED_SHA256) { throw "The SIGNING_CERT_SHA256 repository variable isn't set (see 'Releases' in README.md)" }
           $apk = Get-ChildItem CallGuard/bin/Release/net10.0-android -Recurse -Filter "$env:PACKAGE_NAME-Signed.apk" |
@@ -155,6 +163,14 @@ jobs:
           $expected = $env:EXPECTED_SHA256.ToLowerInvariant() -replace '[^0-9a-f]', ''
           if ($actual -ne $expected) { throw "APK is signed with $actual, not the release key $expected" }
           Write-Host "Signed with the release key ($actual)"
+
+          $badging = & (Join-Path $buildTools.FullName 'aapt2') dump badging $apk.FullName 2>&1
+          $versionName = ($badging | Select-String "versionName='([^']*)'").Matches[0].Groups[1].Value
+          $versionCode = ($badging | Select-String "versionCode='([^']*)'").Matches[0].Groups[1].Value
+          if ($env:APP_VERSION -and $versionName -ne $env:APP_VERSION) {
+            throw "APK reports version '$versionName', not the tag's '$env:APP_VERSION'"
+          }
+          Write-Host "App version $versionName (versionCode $versionCode)"
 
           New-Item -ItemType Directory -Force dist | Out-Null
           $out = "dist/CallGuard-${{ steps.version.outputs.name }}.apk"
@@ -183,7 +199,7 @@ jobs:
           Updating: install the new `.apk` over the old one. Your patterns and call log are kept.
           '@
           gh release create $env:GITHUB_REF_NAME dist/*.apk `
-            --title "Call Guard ${{ steps.version.outputs.prefix }}" `
+            --title "Call Guard ${{ steps.version.outputs.version }}" `
             --notes $notes --generate-notes --verify-tag
 
       - name: Remove keystore
