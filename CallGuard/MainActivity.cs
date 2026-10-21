@@ -57,6 +57,24 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnResume();
         StatusChanged?.Invoke();
+        RepaintEverything();
+    }
+
+    public override void OnWindowFocusChanged(bool hasFocus)
+    {
+        base.OnWindowFocusChanged(hasFocus);
+        if (hasFocus) RepaintEverything();
+    }
+
+    /// <summary>
+    /// On Android, Avalonia can leave parts of the screen undrawn or stale after the app was in the
+    /// background, or when it was started while the phone was asleep. Repaint the whole screen whenever
+    /// the app comes back into view.
+    /// </summary>
+    void RepaintEverything()
+    {
+        if (Content is Avalonia.Visual root)
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => Avalonia.Controls.TopLevel.GetTopLevel(root)?.InvalidateVisual());
     }
 
     protected override void OnDestroy()
