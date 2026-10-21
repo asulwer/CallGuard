@@ -45,7 +45,7 @@
       <ItemsControl x:Name="BlockList" ItemTemplate="{StaticResource PatternRow}" />
 
       <TextBlock Classes="header" Text="Always allowed" />
-      <TextBlock Classes="hint" Text="These ring even when they match a blocked pattern or another blocking rule." />
+      <TextBlock Classes="hint" Text="These ring even when they also match a blocked pattern." />
       <TextBlock x:Name="NoAllowed" Classes="hint" Text="(none)" />
       <ItemsControl x:Name="AllowList" ItemTemplate="{StaticResource PatternRow}" />
 
