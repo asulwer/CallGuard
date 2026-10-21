@@ -5,7 +5,8 @@
 # versionCode of whole minutes since 2020-01-01 UTC. The release and its tag are named after the version
 # the build produced (Call Guard 1.0.261021, tag v1.0.261021). Another push on the same day replaces that
 # day's release with the newer build — same version, higher versionCode, so it still installs as an update.
-# Pushes that only change documentation (Markdown files, docs/, LICENSE, FUNDING.yml) don't release.
+# Pushes that only change documentation (Markdown files, docs/, LICENSE, FUNDING.yml)
+# and Dependabot's settings don't release.
 # "Run workflow" in the Actions tab does the same as a push.
 #
 # Required repository secrets:
@@ -26,6 +27,7 @@ on:
       - 'docs/**'
       - 'LICENSE*'
       - '.github/FUNDING.yml'
+      - '.github/dependabot.yml'
   workflow_dispatch:
 
 # One release at a time; a push made while a release is running waits for it.
