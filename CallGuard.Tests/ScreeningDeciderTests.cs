@@ -5,7 +5,7 @@ public class ScreeningDeciderTests
     static readonly PatternSet Block602 = new(Block: ["602*"], Allow: []);
 
     static ScreeningDecision Decide(IncomingCall call, bool? isContact, PatternSet? patterns = null) =>
-        ScreeningDecider.Decide(call, () => patterns ?? Block602, _ => isContact);
+        ScreeningDecider.Decide(call, () => patterns ?? Block602, _ => new ContactLookup(isContact, []));
 
     static ScreeningDecision Decide(string? number, bool? isContact) => Decide(new IncomingCall(number), isContact);
 
@@ -28,6 +28,15 @@ public class ScreeningDeciderTests
     }
 
     [Fact]
+    public void MatchingNumber_ThatIsAContact_SaysWhereTheContactIsFrom()
+    {
+        var d = ScreeningDecider.Decide(new IncomingCall("+16025551234"), () => Block602,
+            _ => ContactLookup.Contact("WhatsApp", "Google", "WhatsApp"));
+        Assert.False(d.Blocks);
+        Assert.Equal("contact in WhatsApp, Google (matches 602*)", d.Reason);
+    }
+
+    [Fact]
     public void MatchingNumber_WithoutContactsAccess_IsAllowed()
     {
         var d = Decide("+16025551234", isContact: null);
@@ -39,7 +48,7 @@ public class ScreeningDeciderTests
     public void NonMatchingNumber_IsAllowed_WithoutLookingUpContacts()
     {
         bool lookedUp = false;
-        var d = ScreeningDecider.Decide(new IncomingCall("+14805551234"), () => Block602, _ => { lookedUp = true; return false; });
+        var d = ScreeningDecider.Decide(new IncomingCall("+14805551234"), () => Block602, _ => { lookedUp = true; return ContactLookup.NotAContact; });
         Assert.False(d.Blocks);
         Assert.Equal("allowed  (480) 555-1234", d.Describe());
         Assert.False(lookedUp);
@@ -49,7 +58,7 @@ public class ScreeningDeciderTests
     public void ContactLookup_GetsTheRawNumber()
     {
         string? looked = null;
-        ScreeningDecider.Decide(new IncomingCall("+1 (602) 555-1234"), () => Block602, n => { looked = n; return false; });
+        ScreeningDecider.Decide(new IncomingCall("+1 (602) 555-1234"), () => Block602, n => { looked = n; return ContactLookup.NotAContact; });
         Assert.Equal("+1 (602) 555-1234", looked);
     }
 

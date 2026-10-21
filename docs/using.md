@@ -40,7 +40,7 @@ Type any phone number and tap **Check** to see what Call Guard would do if that 
 now, and why. For example:
 
 - *(602) 555-4321 (Arizona) would be BLOCKED: matches 602\*.*
-- *(602) 555-0001 (Arizona) would ring: contact (matches 602\*).*
+- *(602) 555-0001 (Arizona) would ring: contact in Google (matches 602\*).*
 - *(602) 555-0123 (Arizona) would ring: always allow 6025550123.*
 - *(416) 555-1234 (Ontario, Canada) would ring: no pattern matches it.*
 
@@ -96,7 +96,7 @@ Every call Call Guard screened, newest first, with when it came in, where the nu
 | Shown as | Meaning |
 |---|---|
 | **BLOCKED** (red) · `matches 602*` | Rejected because it matched that pattern. |
-| allowed · `contact (matches 602*)` | Matched a pattern, but the caller is a saved contact, so it rang. |
+| allowed · `contact in Google (matches 602*)` | Matched a pattern, but the caller is a saved contact, so it rang. It names where the copy holding that number comes from: Google, WhatsApp, Signal, SIM card, this phone (saved on the phone only), … |
 | allowed · `always allow 6025550123` | Matched an always-allow pattern. |
 | allowed (no reason) | No pattern matched. |
 | allowed hidden number | No caller ID; left to the Phone app. |

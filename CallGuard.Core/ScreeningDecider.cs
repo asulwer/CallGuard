@@ -52,14 +52,14 @@ public readonly record struct ScreeningDecision(ScreeningAction Action, string N
 public static class ScreeningDecider
 {
     /// <param name="patterns">Loads the saved patterns; only called when needed.</param>
-    /// <param name="isContact">
-    /// Looks up the raw number in contacts: true if saved, false if not, null if contacts can't be read.
-    /// Only called when there is a reason to block.
+    /// <param name="findContact">
+    /// Looks up the raw number in contacts: whether it's saved (or null if contacts can't be read), and where
+    /// from. Only called when there is a reason to block.
     /// </param>
     public static ScreeningDecision Decide(
         IncomingCall call,
         Func<PatternSet> patterns,
-        Func<string, bool?> isContact)
+        Func<string, ContactLookup> findContact)
     {
         var number = RuleEngine.Normalize(call.RawNumber);
         if (call.NumberHidden || number.Length == 0)
@@ -73,9 +73,12 @@ public static class ScreeningDecider
             return new(ScreeningAction.Allow, number, "");
         var reason = $"matches {match}";
 
-        return isContact(call.RawNumber!) switch
+        var contact = findContact(call.RawNumber!);
+        return contact.Found switch
         {
             null => new(ScreeningAction.Allow, number, $"{reason}, NO CONTACTS ACCESS"),
+            true when contact.Sources.Count > 0 =>
+                new(ScreeningAction.Allow, number, $"contact in {string.Join(", ", contact.Sources)} ({reason})"),
             true => new(ScreeningAction.Allow, number, $"contact ({reason})"),
             false => new(ScreeningAction.Reject, number, reason),
         };

@@ -21,7 +21,7 @@ Work through these in order:
 2. **Home tab:** is there a red line saying no blocked pattern is switched on? Tick your patterns on the
    Patterns tab.
 3. **Calls tab:** find the call. The reason tells you why it rang:
-   - `contact (matches …)` — the number is in your contacts, possibly as a copy you didn't know about
+   - `contact in … (matches …)` — the number is in your contacts, possibly as a copy you didn't know about
      (see [the next question](#i-changed-someones-number-but-their-calls-still-get-through)).
    - `always allow …` — an always-allow pattern covers it.
    - no reason — no ticked pattern matches the number as it arrived. Compare the number shown with your
@@ -37,8 +37,9 @@ Work through these in order:
 
 Their number is still saved somewhere else on your phone. Contacts can be made of several copies — from
 your Google account, the SIM, WhatsApp, Signal and other apps — and Call Guard lets a call through if
-**any** copy has the number. Open the contact and look at **Linked contacts** (or **Sources**) to find the
-other copies.
+**any** copy has the number. The Calls tab says which copy it was — `contact in WhatsApp (matches 602*)`
+means the WhatsApp copy still has the old number. Open the contact and look at **Linked contacts** (or
+**Sources**) to find that copy and fix or remove it.
 
 ## Someone in my contacts was blocked
 
