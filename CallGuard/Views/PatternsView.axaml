@@ -5,7 +5,7 @@
 
   <UserControl.Resources>
     <DataTemplate x:Key="PatternRow" x:DataType="data:NumberPattern">
-      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,4">
         <CheckBox Grid.Column="0" VerticalAlignment="Center" Margin="0,0,4,0"
                   IsChecked="{Binding IsEnabled, Mode=OneWay}" Tag="{Binding Id}" Click="OnToggle" />
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Classes.off="{Binding !IsEnabled}">
@@ -13,7 +13,8 @@
           <TextBlock Classes="hint" Text="{Binding Label}"
                      IsVisible="{Binding Label, Converter={x:Static ObjectConverters.IsNotNull}}" />
         </StackPanel>
-        <Button Grid.Column="2" Content="Remove" Tag="{Binding Id}" Click="OnRemove" />
+        <Button Grid.Column="2" Content="Edit" Margin="0,0,6,0" Tag="{Binding}" Click="OnEdit" />
+        <Button Grid.Column="3" Content="Remove" Tag="{Binding Id}" Click="OnRemove" />
       </Grid>
     </DataTemplate>
   </UserControl.Resources>
@@ -24,19 +25,20 @@
     </Style>
   </UserControl.Styles>
 
-  <ScrollViewer>
+  <ScrollViewer x:Name="Scroller">
     <StackPanel Margin="16" Spacing="8">
 
-      <TextBlock Classes="header" Text="Add a pattern" Margin="0" />
-      <TextBlock Classes="hint"
+      <TextBlock x:Name="FormHeader" Classes="header" Text="Add a pattern" Margin="0" />
+      <TextBlock x:Name="FormHint" Classes="hint"
                  Text="US numbers.  * = any digits,  ? = one digit.  Example: 602* covers the whole 602 area code. For another country start with + and its country code: +44* covers the whole UK, +4420* just London. Saved contacts always ring." />
       <TextBox x:Name="PatternBox" PlaceholderText="Pattern, e.g. 602* or +44*" FontFamily="monospace" />
-      <TextBox x:Name="LabelBox" PlaceholderText="Note (optional)" />
-      <StackPanel Orientation="Horizontal" Spacing="24">
+      <TextBox x:Name="LabelBox" PlaceholderText="Note (optional)" MaxLength="100" />
+      <StackPanel x:Name="ActionChoice" Orientation="Horizontal" Spacing="24">
         <RadioButton x:Name="BlockRadio" Content="Block" IsChecked="True" />
         <RadioButton x:Name="AllowRadio" Content="Always allow" />
       </StackPanel>
-      <Button Classes="wide" Content="Add" Click="OnAdd" />
+      <Button x:Name="AddButton" Classes="wide" Content="Add" Click="OnAdd" />
+      <Button x:Name="CancelEditButton" Classes="wide" Content="Cancel" Click="OnCancelEdit" IsVisible="False" />
       <TextBlock x:Name="AddMessage" Classes="status" IsVisible="False" />
 
       <TextBlock Classes="header" Text="Blocked" />

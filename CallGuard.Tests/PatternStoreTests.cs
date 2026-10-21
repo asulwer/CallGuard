@@ -141,6 +141,25 @@ public sealed class PatternStoreTests : TempDatabase
     }
 
     [Fact]
+    public void SetLabel_ChangesTrimsAndClearsTheNote()
+    {
+        Store.Add("602*", label: "old note");
+        var id = Store.List()[0].Id;
+        int changes = 0;
+        Store.Changed += () => changes++;
+
+        Assert.True(Store.SetLabel(id, "  Phoenix spam  "));
+        Assert.Equal("Phoenix spam", Store.List()[0].Label);
+
+        Assert.True(Store.SetLabel(id, "   "));
+        Assert.Null(Store.List()[0].Label);
+
+        Assert.False(Store.SetLabel(12345, "nobody"));
+        Assert.Equal(2, changes);
+        Assert.Equal("602*", Store.List()[0].Pattern); // the pattern itself is untouched
+    }
+
+    [Fact]
     public void Remove_DeletesOnlyThatPattern()
     {
         Store.Add("602*");
