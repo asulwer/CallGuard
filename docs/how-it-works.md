@@ -51,7 +51,8 @@ their own copies. If **any** of them has the number, the call rings.
 
 That's why changing someone's number in the Contacts app may not stop their calls from getting through:
 another copy may still have the old number. Open the contact and check its **Linked contacts** (or
-**Sources**) to see where the copies come from.
+**Sources**) to see where the copies come from. The Calls tab helps: it shows which copy let the call
+through, e.g. `contact in WhatsApp (matches 602*)`.
 
 ## If something goes wrong
 {: #if-something-goes-wrong }

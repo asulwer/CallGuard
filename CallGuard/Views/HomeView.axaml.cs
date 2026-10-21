@@ -99,7 +99,7 @@ public partial class HomeView : UserControl
         var decision = ScreeningDecider.Decide(
             new IncomingCall(input),
             Store.Patterns.Load,
-            raw => ContactsChecker.IsContact(Ctx, raw));
+            raw => ContactsChecker.Lookup(Ctx, raw));
 
         var number = RuleEngine.Normalize(input);
         var place = PlaceNames.ForNumber(number);

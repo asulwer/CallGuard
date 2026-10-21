@@ -232,7 +232,7 @@ public sealed class PatternStoreTests : TempDatabase
         Store.Add("6025550123", PatternAction.Allow);
 
         ScreeningAction Screen(string n) =>
-            ScreeningDecider.Decide(new(n), Store.Load, _ => false).Action;
+            ScreeningDecider.Decide(new(n), Store.Load, _ => ContactLookup.NotAContact).Action;
 
         Assert.Equal(ScreeningAction.Reject, Screen("+16025551234"));
         Assert.Equal(ScreeningAction.Allow, Screen("+16025550123"));

@@ -85,6 +85,6 @@ public class BlockerService : CallScreeningService
         return ScreeningDecider.Decide(
             call,
             Store.PatternsForScreening,
-            raw => ContactsChecker.IsContact(this, raw));
+            raw => ContactsChecker.Lookup(this, raw));
     }
 }

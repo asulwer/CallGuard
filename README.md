@@ -57,8 +57,8 @@ The app has three tabs.
   either. A red line also warns when no blocked pattern is switched on (every call rings).
 - **Blocked calls:** how many calls Call Guard blocked today, in the last 7 days and in the last 30 days.
 - **Test a number:** type any number and tap **Check** to see what Call Guard would do if it called you now,
-  and why — for example "(602) 555-4321 (Arizona) would be BLOCKED: matches 602*" or "would ring: contact
-  (matches 602*)".
+  and why — for example "(602) 555-4321 (Arizona) would be BLOCKED: matches 602*" or "would ring: contact in
+  Google (matches 602*)".
 - At the bottom: the installed version.
 
 ### Patterns
@@ -108,7 +108,7 @@ allow 6025550123    # doctor's office
 The recent calls Call Guard screened, newest first, with when, where the number is from (e.g. Arizona or
 Ontario, Canada), what Call Guard did and why:
 - **BLOCKED** (red) — the call was rejected, e.g. `matches 602*`.
-- **allowed** — the call rang, e.g. `contact (matches 602*)`, `always allow 6025550123`, or no reason when no
+- **allowed** — the call rang, e.g. `contact in Google (matches 602*)`, `always allow 6025550123`, or no reason when no
   pattern matched.
 
 Tap **Block** on a call that got through, or **Allow** on one that was blocked, to add that exact number
@@ -142,7 +142,8 @@ Errors appear in the Calls tab as `ERROR … (call allowed)`.
 ## Good to know
 - **Contacts are found by number across all apps.** If you change someone's number in Contacts but another
   app (WhatsApp, Signal, your Google account, the SIM) still has a copy with the old number, Android still
-  treats that number as a contact. Check the contact's **Linked contacts** to see where copies come from.
+  treats that number as a contact. The Calls tab names the copy that let the call through — e.g.
+  `contact in WhatsApp` — and the contact's **Linked contacts** shows every copy.
 - **What callers hear:** a blocked caller hears a ring and then voicemail — the same as when you decline a
   call. The phone can't make a number sound "not in service"; if someone keeps calling, block that one
   number in Google Voice, which does.
