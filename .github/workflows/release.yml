@@ -135,17 +135,22 @@ jobs:
 
           $buildTools = Get-ChildItem (Join-Path $env:ANDROID_SDK_ROOT 'build-tools') -Directory |
             Sort-Object { [version]($_.Name -replace '[^0-9.].*$', '') } | Select-Object -Last 1
-          $certs = & (Join-Path $buildTools.FullName 'apksigner') verify --print-certs $apk.FullName 2>&1
-          if ($LASTEXITCODE -ne 0) { throw "APK signature doesn't verify: $certs" }
-          $actual = ($certs | Select-String 'Signer #1 certificate SHA-256 digest: (\w+)').Matches[0].Groups[1].Value
+          $certs = (& (Join-Path $buildTools.FullName 'apksigner') verify --print-certs $apk.FullName 2>&1) | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "APK signature doesn't verify:`n$certs" }
+          # The wording varies between apksigner versions ("Signer #1 certificate ...", "Signer (minSdkVersion=...)
+          # certificate ..."), so take every certificate digest it lists and require all of them to be the release key.
+          $digests = @([regex]::Matches($certs, 'certificate SHA-256 digest:\s*([0-9a-fA-F]+)') |
+            ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
           $expected = $env:EXPECTED_SHA256.ToLowerInvariant() -replace '[^0-9a-f]', ''
-          if ($actual -ne $expected) { throw "APK is signed with $actual, not the release key $expected" }
-          Write-Host "Signed with the release key ($actual)"
+          if ($digests.Count -eq 0 -or ($digests | Where-Object { $_ -ne $expected })) {
+            throw "APK isn't signed (only) with the release key $expected. apksigner said:`n$certs"
+          }
+          Write-Host "Signed with the release key ($expected)"
 
-          $badging = & (Join-Path $buildTools.FullName 'aapt2') dump badging $apk.FullName 2>&1
-          $version = ($badging | Select-String "versionName='([^']*)'").Matches[0].Groups[1].Value
-          $versionCode = ($badging | Select-String "versionCode='([^']*)'").Matches[0].Groups[1].Value
-          if (-not $version) { throw "Couldn't read the APK's version: $badging" }
+          $badging = (& (Join-Path $buildTools.FullName 'aapt2') dump badging $apk.FullName 2>&1) | Out-String
+          $version = [regex]::Match($badging, "versionName='([^']*)'").Groups[1].Value
+          $versionCode = [regex]::Match($badging, "versionCode='([^']*)'").Groups[1].Value
+          if (-not $version -or -not $versionCode) { throw "Couldn't read the APK's version. aapt2 said:`n$badging" }
           Write-Host "Version $version (versionCode $versionCode)"
 
           New-Item -ItemType Directory -Force dist | Out-Null
