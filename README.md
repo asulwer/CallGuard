@@ -148,3 +148,6 @@ Errors appear in the Calls tab as `ERROR … (call allowed)`.
   number in Google Voice, which does.
 - **Text messages are not blocked.** Android only lets the default SMS app filter messages. Use the spam
   and blocking settings in Google Messages, or in Google Voice for Voice texts.
+
+## License
+Call Guard is free and open source under the [MIT License](LICENSE).
