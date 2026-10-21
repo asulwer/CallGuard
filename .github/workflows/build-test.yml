@@ -1,6 +1,6 @@
-# Builds and tests every push and pull request to master, so a broken build, a failing test or a
-# forgotten EF migration (CallGuard.Tests checks the model against the migrations) shows up early.
-# Needs no secrets and never publishes anything.
+# Builds and tests every pull request to master, so a broken build, a failing test or a forgotten EF
+# migration (CallGuard.Tests checks the model against the migrations) shows up before merging. Needs no
+# secrets and never publishes anything. (Pushes to master are tested by the release workflow.)
 #
 # Two jobs run side by side:
 #   tests     runs CallGuard.Tests (about 1 minute)
@@ -10,13 +10,11 @@
 name: Build and test
 
 on:
-  push:
-    branches: [master]
   pull_request:
     branches: [master]
   workflow_dispatch:
 
-# A newer push to the same branch or PR cancels the run that's still checking the old commit.
+# A newer push to the same PR cancels the run that's still checking the old commit.
 concurrency:
   group: build-test-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

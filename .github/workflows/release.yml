@@ -1,13 +1,11 @@
-# Builds a signed APK and publishes it as a GitHub Release that anyone can download and install.
+# Builds a signed APK on every push to master and publishes it as a GitHub Release that anyone can
+# download and install.
 #
-# To make a release, tag the commit with its version and push the tag:
-#   git tag v1.1
-#   git push origin v1.1
-# The tag is the version: the app reports exactly what follows the "v" (v1.1 -> 1.1), and the
-# workflow checks the built APK before publishing. The hidden versionCode comes from CallGuard.csproj
-# (whole minutes since 2020-01-01 UTC), so each release is accepted as an update to the one before.
-# "Run workflow" in the Actions tab builds the same APK (with the usual date-based version) and keeps
-# it as a workflow artifact, without publishing a release.
+# The project dictates the version: CallGuard.csproj makes it 1.0.yyMMdd (the build date) with a
+# versionCode of whole minutes since 2020-01-01 UTC. The release and its tag are named after the version
+# the build produced (Call Guard 1.0.261021, tag v1.0.261021). Another push on the same day replaces that
+# day's release with the newer build — same version, higher versionCode, so it still installs as an update.
+# "Run workflow" in the Actions tab does the same as a push.
 #
 # Required repository secrets:
 #   CALLGUARD_KEYSTORE_BASE64   base64 of the signing keystore (Visual Studio's "callguard" signing identity)
@@ -20,16 +18,16 @@ name: Release APK
 
 on:
   push:
-    tags: ['v*']
+    branches: [master]
   workflow_dispatch:
 
-# Never let two releases of the same tag race each other.
+# One release at a time; a push made while a release is running waits for it.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 permissions:
-  contents: write   # create the release and upload the APK
+  contents: write   # create releases and their tags
 
 jobs:
   release:
@@ -47,6 +45,9 @@ jobs:
       PACKAGE_NAME: com.acclscompany.callguard
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
+      # The version carries the local build date (yyMMdd). Build in the same timezone as local builds,
+      # so a late-evening release doesn't get the next day's date.
+      TZ: America/Phoenix
 
     steps:
       # Ubuntu 26.04 mounts /tmp as a RAM disk with a ~7.8 GB per-user quota, and the workload
@@ -59,23 +60,6 @@ jobs:
           "TMPDIR=$tmp" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - uses: actions/checkout@v7
-
-      # Work out the version first, so a badly named tag fails in seconds.
-      - name: Version from tag
-        id: version
-        run: |
-          $version = ''
-          $name = "manual-$($env:GITHUB_SHA.Substring(0, 7))"
-          if ($env:GITHUB_REF_TYPE -eq 'tag') {
-            $version = $env:GITHUB_REF_NAME -replace '^v', ''
-            if ($version -notmatch '^\d+(\.\d+){0,3}$') {
-              throw "Tag '$env:GITHUB_REF_NAME' isn't a version like v1.1 or v1.0.3"
-            }
-            $name = $env:GITHUB_REF_NAME
-          }
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Host "App version '$version' (empty = date-based), release name $name"
 
       # Install the SDK somewhere the runner user owns, so the workload install needs no sudo.
       - uses: actions/setup-dotnet@v6
@@ -107,7 +91,7 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.CALLGUARD_KEYSTORE_BASE64 }}
         run: |
-          if (-not $env:KEYSTORE_BASE64) { throw "The CALLGUARD_KEYSTORE_BASE64 secret isn't set (see 'Releases' in README.md)" }
+          if (-not $env:KEYSTORE_BASE64) { throw "The CALLGUARD_KEYSTORE_BASE64 secret isn't set" }
           $path = Join-Path $env:RUNNER_TEMP 'callguard.keystore'
           [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($env:KEYSTORE_BASE64))
           "KEYSTORE_PATH=$path" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
@@ -117,7 +101,7 @@ jobs:
         env:
           CALLGUARD_KEYSTORE_PASS: ${{ secrets.CALLGUARD_KEYSTORE_PASS }}
         run: |
-          if (-not $env:CALLGUARD_KEYSTORE_PASS) { throw "The CALLGUARD_KEYSTORE_PASS secret isn't set (see 'Releases' in README.md)" }
+          if (-not $env:CALLGUARD_KEYSTORE_PASS) { throw "The CALLGUARD_KEYSTORE_PASS secret isn't set" }
           $keytool = Join-Path $env:JAVA_HOME 'bin/keytool'
           $entries = & $keytool -list -keystore $env:KEYSTORE_PATH -storepass:env CALLGUARD_KEYSTORE_PASS 2>&1
           if ($LASTEXITCODE -ne 0) { throw "CALLGUARD_KEYSTORE_PASS is wrong, or CALLGUARD_KEYSTORE_BASE64 is damaged: $entries" }
@@ -130,26 +114,20 @@ jobs:
       - name: Build signed APK
         env:
           CALLGUARD_KEYSTORE_PASS: ${{ secrets.CALLGUARD_KEYSTORE_PASS }}
-          APP_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          $publish = @(
-            'publish', $env:PROJECT, '-f', 'net10.0-android', '-c', 'Release',
-            "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT",
-            "-p:JavaSdkDirectory=$env:JAVA_HOME",
-            "-p:CallGuardKeyStore=$env:KEYSTORE_PATH")
-          # A release reports exactly its tag's version (Android's versionName).
-          if ($env:APP_VERSION) { $publish += "-p:ApplicationDisplayVersion=$env:APP_VERSION" }
-          dotnet @publish
-          if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+        run: >
+          dotnet publish $env:PROJECT -f net10.0-android -c Release
+          "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT"
+          "-p:JavaSdkDirectory=$env:JAVA_HOME"
+          "-p:CallGuardKeyStore=$env:KEYSTORE_PATH"
 
-      # A release signed with any other key couldn't update the app on anyone's phone, and a
-      # release must report the same version as its tag.
-      - name: Collect APK and check its signature and version
+      # A release signed with any other key couldn't update the app on anyone's phone. The version is read
+      # from the APK itself, so the release always carries exactly the version the app reports.
+      - name: Collect APK, check its signature and read its version
+        id: apk
         env:
           EXPECTED_SHA256: ${{ vars.SIGNING_CERT_SHA256 }}
-          APP_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          if (-not $env:EXPECTED_SHA256) { throw "The SIGNING_CERT_SHA256 repository variable isn't set (see 'Releases' in README.md)" }
+          if (-not $env:EXPECTED_SHA256) { throw "The SIGNING_CERT_SHA256 repository variable isn't set" }
           $apk = Get-ChildItem CallGuard/bin/Release/net10.0-android -Recurse -Filter "$env:PACKAGE_NAME-Signed.apk" |
             Where-Object { $_.FullName -match '[\\/]publish[\\/]' } |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
@@ -165,17 +143,15 @@ jobs:
           Write-Host "Signed with the release key ($actual)"
 
           $badging = & (Join-Path $buildTools.FullName 'aapt2') dump badging $apk.FullName 2>&1
-          $versionName = ($badging | Select-String "versionName='([^']*)'").Matches[0].Groups[1].Value
+          $version = ($badging | Select-String "versionName='([^']*)'").Matches[0].Groups[1].Value
           $versionCode = ($badging | Select-String "versionCode='([^']*)'").Matches[0].Groups[1].Value
-          if ($env:APP_VERSION -and $versionName -ne $env:APP_VERSION) {
-            throw "APK reports version '$versionName', not the tag's '$env:APP_VERSION'"
-          }
-          Write-Host "App version $versionName (versionCode $versionCode)"
+          if (-not $version) { throw "Couldn't read the APK's version: $badging" }
+          Write-Host "Version $version (versionCode $versionCode)"
 
           New-Item -ItemType Directory -Force dist | Out-Null
-          $out = "dist/CallGuard-${{ steps.version.outputs.name }}.apk"
-          Copy-Item $apk.FullName $out
-          Write-Host "Built $out ($([math]::Round($apk.Length / 1MB, 1)) MB)"
+          Copy-Item $apk.FullName "dist/CallGuard-$version.apk"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "versionCode=$versionCode" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Keep APK as a workflow artifact
         uses: actions/upload-artifact@v7
@@ -184,23 +160,35 @@ jobs:
           path: dist/*.apk
           retention-days: 30
 
+      # One release per version. A later build of the same version (same day) replaces the earlier
+      # release, so its tag, notes and APK always match the newest build.
       - name: Publish GitHub release
-        if: ${{ github.ref_type == 'tag' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.apk.outputs.version }}
+          VERSION_CODE: ${{ steps.apk.outputs.versionCode }}
         run: |
+          $tag = "v$env:VERSION"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Replacing the existing $tag release with this newer build"
+            gh release delete $tag --yes --cleanup-tag
+            if ($LASTEXITCODE -ne 0) { throw "Couldn't replace the existing $tag release" }
+          }
+
           $notes = @'
           ## Install
           1. On your Android phone (Android 10 or later), download the `.apk` below.
           2. Open it and allow your browser or Files app to install apps when Android asks.
              Google Play Protect may warn about an app from an unknown developer; choose **Install anyway**.
-          3. Open Call Guard and follow the Setup steps on its Home tab.
+          3. Open Call Guard and follow the setup steps on its Home tab (see the README).
 
           Updating: install the new `.apk` over the old one. Your patterns and call log are kept.
           '@
-          gh release create $env:GITHUB_REF_NAME dist/*.apk `
-            --title "Call Guard ${{ steps.version.outputs.version }}" `
-            --notes $notes --generate-notes --verify-tag
+          $notes += "`n`nBuild $env:VERSION_CODE."
+          gh release create $tag dist/*.apk --target $env:GITHUB_SHA `
+            --title "Call Guard $env:VERSION" --notes $notes --generate-notes
+          if ($LASTEXITCODE -ne 0) { throw "Couldn't create the $tag release" }
 
       - name: Remove keystore
         if: always()
