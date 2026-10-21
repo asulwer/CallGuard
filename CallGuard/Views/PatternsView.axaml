@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:data="using:CallGuard.Data"
+             xmlns:views="using:CallGuard.Views"
              x:Class="CallGuard.Views.PatternsView">
 
   <UserControl.Resources>
@@ -10,6 +11,8 @@
                   IsChecked="{Binding IsEnabled, Mode=OneWay}" Tag="{Binding Id}" Click="OnToggle" />
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Classes.off="{Binding !IsEnabled}">
           <TextBlock Text="{Binding Pattern}" FontFamily="monospace" FontSize="16" />
+          <TextBlock Classes="hint" Text="{Binding Pattern, Converter={x:Static views:Ui.PlaceOfPattern}}"
+                     IsVisible="{Binding $self.Text, Converter={x:Static ObjectConverters.IsNotNull}}" />
           <TextBlock Classes="hint" Text="{Binding Label}"
                      IsVisible="{Binding Label, Converter={x:Static ObjectConverters.IsNotNull}}" />
         </StackPanel>

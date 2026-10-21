@@ -28,6 +28,8 @@ public class MainApplication : AvaloniaAndroidApplication<App>
     {
         if (uiStarted) return;
         uiStarted = true;
+        // Place names ("Arizona") load a few MB of data; get that done before a screen needs it.
+        Task.Run(PlaceNames.WarmUp);
         base.OnCreate();
     }
 }

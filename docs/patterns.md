@@ -27,7 +27,9 @@ On the **Patterns** tab:
 
 <img src="{{ '/assets/images/patterns.png' | relative_url }}" alt="Patterns tab with blocked and always-allowed patterns" width="260">
 
-Before relying on a pattern, check it with **Test a number** on the Home tab.
+Under each pattern Call Guard shows the place it covers — *Arizona* for `602*`, *Jamaica* for `876*`,
+*United Kingdom* for `+44*` — a quick check that you typed the area or country code you meant. Before
+relying on a pattern, check it with **Test a number** on the Home tab.
 
 ## US numbers
 

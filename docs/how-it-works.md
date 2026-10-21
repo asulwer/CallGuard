@@ -77,6 +77,9 @@ aren't blocked. Use the spam and blocking settings in Google Messages, or in Goo
   Being the Caller ID & spam app lets it see each incoming number; Android grants that role separately.
 - **No internet access:** Call Guard doesn't request internet access at all, so it can't send your
   contacts, patterns or call history anywhere.
+- **Place names** ("Arizona", "London, United Kingdom") come from Google's open-source
+  [libphonenumber](https://github.com/google/libphonenumber) data built into the app, so looking them up
+  needs no internet either. They're only shown on screen; they play no part in deciding calls.
 - **On your phone only:** your patterns and the call log are stored in the app's private storage, which
   other apps can't read. Uninstalling Call Guard deletes them.
 - **Phone backups:** if Android's backup to your Google account is turned on, Call Guard's patterns and call
