@@ -33,7 +33,7 @@ callouts:
 back_to_top: true
 back_to_top_text: "Back to top"
 
-footer_content: "Call Guard — free and open source. <a href=\"https://github.com/asulwer/CallGuard\">Source on GitHub</a>."
+footer_content: "Call Guard — free and open source under the <a href=\"https://github.com/asulwer/CallGuard/blob/master/LICENSE\">MIT License</a>. <a href=\"https://github.com/asulwer/CallGuard\">Source on GitHub</a>."
 
 plugins:
   - jekyll-seo-tag
