@@ -87,7 +87,8 @@ Google Drive) and opening it in the Files app works too.
 
 ## Versioning
 Set in `CallGuard.csproj`, every build:
-- **versionName** (what Android shows): `1.0.yyMMdd`. Override it with `-p:ApplicationDisplayVersion=1.1`.
+- **versionName** (what Android shows): `VersionPrefix.yyMMdd`, e.g. `1.0.261021` — the build date. Change
+  `VersionPrefix` in the project for a new major/minor version.
 - **versionCode** (what Android compares for updates): whole minutes since 2020-01-01 UTC, so every build is
   newer than the one before. Builds within the same minute share a code; Android still accepts reinstalling it.
 - .NET assembly versions are pinned to `1.0.0.0`, because the date part exceeds their 65535 limit.
@@ -121,5 +122,5 @@ call — and remembers the schema version, so later starts skip the check.
   country code, so a pattern like `+44*` can never match a US number.
 
 ## Continuous integration
-Every push and pull request to `master` runs **Build and test** (`.github/workflows/build-test.yml`): the unit
-tests and a Release build of the app, signed with the debug key.
+Every pull request to `master` runs **Build and test** (`.github/workflows/build-test.yml`): the unit tests
+and a Release build of the app, signed with the debug key.
