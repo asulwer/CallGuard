@@ -57,7 +57,8 @@ The app has three tabs.
   either. A red line also warns when no blocked pattern is switched on (every call rings).
 - **Blocked calls:** how many calls Call Guard blocked today, in the last 7 days and in the last 30 days.
 - **Test a number:** type any number and tap **Check** to see what Call Guard would do if it called you now,
-  and why — for example "would be BLOCKED: matches 602*" or "would ring: contact (matches 602*)".
+  and why — for example "(602) 555-4321 (Arizona) would be BLOCKED: matches 602*" or "would ring: contact
+  (matches 602*)".
 - At the bottom: the installed version.
 
 ### Patterns
@@ -88,6 +89,10 @@ office inside a blocked area code.
 deleting it; tick it to switch it back on. To pause blocking altogether, untick all your blocked patterns.
 **Remove** deletes a pattern.
 
+**Where they're from:** under each pattern Call Guard shows the place it covers — `602*` Arizona,
+`876*` Jamaica, `+44*` United Kingdom, `+4420*` London, United Kingdom. Nothing is shown when the pattern
+has too few digits to tell (e.g. `60*`). Calls and **Test a number** show the caller's place the same way.
+
 **Backup:** **Export…** saves your patterns to a text file (e.g. on Google Drive); **Import…** loads them,
 for example on a new phone. Patterns you already have are skipped. The file is plain text, so you can also
 write or edit it by hand:
@@ -100,7 +105,8 @@ allow 6025550123    # doctor's office
 ```
 
 ### Calls
-The recent calls Call Guard screened, newest first, with what it did and why:
+The recent calls Call Guard screened, newest first, with when, where the number is from (e.g. Arizona or
+Ontario, Canada), what Call Guard did and why:
 - **BLOCKED** (red) — the call was rejected, e.g. `matches 602*`.
 - **allowed** — the call rang, e.g. `contact (matches 602*)`, `always allow 6025550123`, or no reason when no
   pattern matched.

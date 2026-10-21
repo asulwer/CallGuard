@@ -21,7 +21,8 @@ public sealed class CallRow(CallLogEntry entry)
         {
             var when = Entry.TimeUtc.ToLocalTime().ToString("MMM d, h:mm tt", CultureInfo.CurrentCulture);
             var reason = Entry.Reason == "hidden number" ? "" : Entry.Reason;
-            return reason.Length > 0 ? $"{when} · {reason}" : when;
+            var place = Entry.Number.Length > 0 ? PlaceNames.ForNumber(Entry.Number) : null;
+            return string.Join(" · ", new[] { when, place, reason }.Where(part => !string.IsNullOrEmpty(part)));
         }
     }
 

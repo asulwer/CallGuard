@@ -39,10 +39,10 @@ Call Guard never sees them.
 Type any phone number and tap **Check** to see what Call Guard would do if that number called you right
 now, and why. For example:
 
-- *(602) 555-4321 would be BLOCKED: matches 602\*.*
-- *(602) 555-0001 would ring: contact (matches 602\*).*
-- *(602) 555-0123 would ring: always allow 6025550123.*
-- *(480) 555-1234 would ring: no pattern matches it.*
+- *(602) 555-4321 (Arizona) would be BLOCKED: matches 602\*.*
+- *(602) 555-0001 (Arizona) would ring: contact (matches 602\*).*
+- *(602) 555-0123 (Arizona) would ring: always allow 6025550123.*
+- *(416) 555-1234 (Ontario, Canada) would ring: no pattern matches it.*
 
 It uses your real patterns and contacts, so it's the quickest way to check a new pattern. For another
 country, type the number with its `+` and country code, e.g. `+44 20 7123 4567`.
@@ -57,6 +57,8 @@ Add, switch on and off, and remove the patterns that decide which calls are bloc
 
 - **Add a pattern** — the pattern, an optional note, and **Block** or **Always allow**.
 - **Blocked** and **Always allowed** — your patterns, each with an on/off check box and a **Remove** button.
+  Under each pattern is the place it covers, e.g. *Arizona* for `602*` or *London, United Kingdom* for
+  `+4420*`. Nothing is shown when the pattern has too few digits to tell, such as `60*`.
 - **Backup** — export and import.
 
 See [Patterns](patterns.html) for how to write them.
@@ -88,7 +90,8 @@ allow 6025550123    # Dr. Lee's office
 
 <img src="{{ '/assets/images/calls.png' | relative_url }}" alt="Calls tab listing blocked and allowed calls" width="260">
 
-Every call Call Guard screened, newest first, with when it came in, what Call Guard did and why:
+Every call Call Guard screened, newest first, with when it came in, where the number is from (e.g.
+*Arizona* or *Ontario, Canada*), what Call Guard did and why:
 
 | Shown as | Meaning |
 |---|---|

@@ -101,7 +101,9 @@ public partial class HomeView : UserControl
             Store.Patterns.Load,
             raw => ContactsChecker.IsContact(Ctx, raw));
 
-        var shown = RuleEngine.Format(RuleEngine.Normalize(input));
+        var number = RuleEngine.Normalize(input);
+        var place = PlaceNames.ForNumber(number);
+        var shown = RuleEngine.Format(number) + (place != null ? $" ({place})" : "");
         var (text, ok) = decision switch
         {
             { Action: ScreeningAction.Reject } => ($"{shown} would be BLOCKED: {decision.Reason}.", false),
