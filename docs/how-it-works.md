@@ -86,3 +86,5 @@ aren't blocked. Use the spam and blocking settings in Google Messages, or in Goo
 - **Phone backups:** if Android's backup to your Google account is turned on, Call Guard's patterns and call
   log may be included in it, like other apps' data, so they can come back on a new phone.
 - **Open source:** the complete source code is on [GitHub](https://github.com/asulwer/CallGuard).
+
+The full [privacy policy](privacy.html) has the details.

@@ -1,5 +1,5 @@
-# Builds a signed APK on every push to master and publishes it as a GitHub Release that anyone can
-# download and install.
+# Builds the app on every push to master, publishes the signed APK as a GitHub Release that anyone can
+# download and install, and uploads the same build as an App Bundle (.aab) to Google Play.
 #
 # The project dictates the version: CallGuard.csproj makes it 1.0.yyMMdd (the build date) with a
 # versionCode of whole minutes since 2020-01-01 UTC. The release and its tag are named after the version
@@ -15,6 +15,15 @@
 # Required repository variable (public, not a secret):
 #   SIGNING_CERT_SHA256         SHA-256 of the signing certificate. The release fails unless the APK is
 #                               signed with it, because phones refuse an update signed with another key.
+#
+# Google Play (skipped until PLAY_TRACK is set; the bundle is still kept as a workflow artifact):
+#   PLAY_SERVICE_ACCOUNT_JSON   secret: JSON key of a service account with release permission for the
+#                               app in Play Console (the same account GroceryList uses works)
+#   PLAY_TRACK                  variable: internal, alpha (= Closed testing), beta (= Open testing) or
+#                               production
+#   PLAY_RELEASE_STATUS         variable, optional: completed (default) rolls the release out as soon as
+#                               Google approves it; draft only uploads it, to roll out from Play Console
+# The release notes on Play ("What's new") are the merged pull request's title.
 
 name: Release APK
 
@@ -120,7 +129,8 @@ jobs:
 
       # CallGuard.csproj signs with this keystore when CALLGUARD_KEYSTORE_PASS is set; the password is
       # passed to the signing tool by reference, so it never appears on a command line or in the log.
-      - name: Build signed APK
+      # ForPlay builds the .aab for Google Play next to the .apk, from the same build and version.
+      - name: Build signed APK and App Bundle
         env:
           CALLGUARD_KEYSTORE_PASS: ${{ secrets.CALLGUARD_KEYSTORE_PASS }}
         run: >
@@ -128,6 +138,7 @@ jobs:
           "-p:AndroidSdkDirectory=$env:ANDROID_SDK_ROOT"
           "-p:JavaSdkDirectory=$env:JAVA_HOME"
           "-p:CallGuardKeyStore=$env:KEYSTORE_PATH"
+          -p:ForPlay=true
 
       # A release signed with any other key couldn't update the app on anyone's phone. The version is read
       # from the APK itself, so the release always carries exactly the version the app reports.
@@ -164,14 +175,22 @@ jobs:
 
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item $apk.FullName "dist/CallGuard-$version.apk"
+
+          # The bundle comes from the same build, so it has the same version and signature.
+          $aab = Join-Path $apk.DirectoryName "$env:PACKAGE_NAME-Signed.aab"
+          if (-not (Test-Path $aab)) { throw "Signed App Bundle not found next to the APK" }
+          New-Item -ItemType Directory -Force dist-play | Out-Null
+          Copy-Item $aab "dist-play/CallGuard-$version.aab"
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "versionCode=$versionCode" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
-      - name: Keep APK as a workflow artifact
+      - name: Keep APK and App Bundle as a workflow artifact
         uses: actions/upload-artifact@v7
         with:
           name: callguard-apk
-          path: dist/*.apk
+          path: |
+            dist/*.apk
+            dist-play/*.aab
           retention-days: 30
 
       # One release per version. A later build of the same version (same day) replaces the earlier
@@ -203,6 +222,32 @@ jobs:
           gh release create $tag dist/*.apk --target $env:GITHUB_SHA `
             --title "Call Guard $env:VERSION" --notes $notes --generate-notes
           if ($LASTEXITCODE -ne 0) { throw "Couldn't create the $tag release" }
+
+      # "What's new" on Play: the merged pull request's title (the second paragraph of GitHub's merge
+      # commit message), or the commit's own subject for a direct push or a squash merge.
+      - name: Write Play release notes
+        if: vars.PLAY_TRACK != ''
+        run: |
+          $subject = git log -1 --format=%s
+          $notes = if ($subject -like 'Merge pull request*') {
+            (git log -1 --format=%b) | Where-Object { $_.Trim() } | Select-Object -First 1
+          }
+          if (-not $notes) { $notes = $subject }
+          if ($notes.Length -gt 500) { $notes = $notes.Substring(0, 497) + '...' }
+          New-Item -ItemType Directory -Force whatsnew | Out-Null
+          Set-Content -Path whatsnew/whatsnew-en-US -Value $notes -NoNewline -Encoding utf8NoBOM
+          Write-Host "What's new: $notes"
+
+      - name: Upload to Google Play
+        if: vars.PLAY_TRACK != ''
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ env.PACKAGE_NAME }}
+          releaseFiles: dist-play/*.aab
+          tracks: ${{ vars.PLAY_TRACK }}
+          status: ${{ vars.PLAY_RELEASE_STATUS || 'completed' }}
+          whatsNewDirectory: whatsnew
 
       - name: Remove keystore
         if: always()
