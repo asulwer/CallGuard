@@ -35,6 +35,13 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
+  <!-- -p:ForPlay=true also builds an App Bundle (.aab), the only format Google Play accepts, next to the
+       .apk: one build feeds both the GitHub release and Play, with the same version. -->
+  <PropertyGroup Condition="'$(ForPlay)' == 'true'">
+    <AndroidPackageFormat>aab</AndroidPackageFormat>
+    <AndroidPackageFormats>aab;apk</AndroidPackageFormats>
+  </PropertyGroup>
+
   <!-- Pixel phones are 64-bit ARM; leaving out the other CPU types makes the release APK much smaller.
        To try a release build in the (x64) emulator, build with -p:ForEmulator=true -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
