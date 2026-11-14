@@ -8,8 +8,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-# What the app is built from: build-test.yml's "Needs a build?" list, without that workflow itself.
-$appFiles = '^(CallGuard[^/]*/|[^/]*\.slnx$|Directory\.(Packages|Build)\.(props|targets)$|global\.json$|dotnet-tools\.json$|[Nn]u[Gg]et\.config$)'
+# What the app is built from: the same files whose changes trigger release.yml (its push: paths).
+$appFiles = '^(CallGuard/|CallGuard\.Core/|Directory\.Packages\.props$|Directory\.Build\.(props|targets)$|global\.json$)'
 
 # GitHub's merge commits ("Merge pull request #12 from ...") and squash merges ("Title (#12)").
 $range = if ($From) { "$From..$To" } else { $To }
