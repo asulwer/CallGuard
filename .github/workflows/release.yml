@@ -1,12 +1,12 @@
-# Builds the app on every push to master, publishes the signed APK as a GitHub Release that anyone can
+# Builds the app on every push to master that changes the app, publishes the signed APK as a GitHub Release that anyone can
 # download and install, and uploads the same build as an App Bundle (.aab) to Google Play.
 #
 # The project dictates the version: CallGuard.csproj makes it 1.0.yyMMdd (the build date) with a
 # versionCode of whole minutes since 2020-01-01 UTC. The release and its tag are named after the version
 # the build produced (Call Guard 1.0.261021, tag v1.0.261021). Another push on the same day replaces that
 # day's release with the newer build — same version, higher versionCode, so it still installs as an update.
-# Pushes that only change documentation (Markdown files, docs/, LICENSE, FUNDING.yml)
-# and Dependabot's settings don't release.
+# Pushes that change nothing the app is built from (docs, tests, workflows, repository settings) don't
+# release. To release anyway, e.g. after changing this workflow, use "Run workflow".
 # "Run workflow" in the Actions tab does the same as a push.
 #
 # Required repository secrets:
@@ -31,13 +31,15 @@ name: Release APK
 on:
   push:
     branches: [master]
-    # A push releases unless every file it changes is in this list.
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE*'
-      - '.github/FUNDING.yml'
-      - '.github/dependabot.yml'
+    # Only pushes that change what the app is built from. Keep in step with $appFiles in
+    # .github/scripts/changelog.ps1, which picks the pull requests for the release notes the same way.
+    paths:
+      - 'CallGuard/**'
+      - 'CallGuard.Core/**'
+      - 'Directory.Packages.props'
+      - 'Directory.Build.props'
+      - 'Directory.Build.targets'
+      - 'global.json'
   workflow_dispatch:
 
 # One release at a time; a push made while a release is running waits for it.
