@@ -23,7 +23,8 @@
 #                               production
 #   PLAY_RELEASE_STATUS         variable, optional: completed (default) rolls the release out as soon as
 #                               Google approves it; draft only uploads it, to roll out from Play Console
-# The release notes on Play ("What's new") are the merged pull request's title.
+# Release notes, on GitHub and on Play ("What's new"), list the pull requests merged since the previous
+# release that changed the app (.github/scripts/changelog.ps1).
 
 name: Release APK
 
@@ -77,7 +78,10 @@ jobs:
           New-Item -ItemType Directory -Force $tmp | Out-Null
           "TMPDIR=$tmp" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
+      # Full history and tags, to list the pull requests merged since the previous release.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       # Install the SDK somewhere the runner user owns, so the workload install needs no sudo.
       - uses: actions/setup-dotnet@v6
@@ -193,6 +197,23 @@ jobs:
             dist-play/*.aab
           retention-days: 30
 
+      # What changed since the previous release (a different version: a same-day rebuild lists everything
+      # since the previous day's release, because it replaces that day's release).
+      - name: Write release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.apk.outputs.version }}
+        run: |
+          $previous = gh release list --limit 50 --json tagName -q '.[].tagName' |
+            Where-Object { $_ -ne "v$env:VERSION" } | Select-Object -First 1
+          $changes = if ($previous) { @(./.github/scripts/changelog.ps1 -From $previous) } else { @('First release of Call Guard.') }
+          if (-not $changes) { $changes = @('Build and maintenance updates.') }
+          New-Item -ItemType Directory -Force notes | Out-Null
+          Set-Content notes/changes.txt -Value $changes -Encoding utf8NoBOM
+          Set-Content notes/previous.txt -Value "$previous" -NoNewline -Encoding utf8NoBOM
+          Write-Host "Changes since $(if ($previous) { $previous } else { 'the beginning' }):"
+          $changes | ForEach-Object { Write-Host "  $_" }
+
       # One release per version. A later build of the same version (same day) replaces the earlier
       # release, so its tag, notes and APK always match the newest build.
       - name: Publish GitHub release
@@ -209,30 +230,30 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Couldn't replace the existing $tag release" }
           }
 
-          $notes = @'
-          ## Install
-          1. On your Android phone (Android 10 or later), download the `.apk` below.
-          2. Open it and allow your browser or Files app to install apps when Android asks.
-             Google Play Protect may warn about an app from an unknown developer; choose **Install anyway**.
-          3. Open Call Guard and follow the setup steps on its Home tab (see the README).
-
-          Updating: install the new `.apk` over the old one. Your patterns and call log are kept.
-          '@
-          $notes += "`n`nBuild $env:VERSION_CODE."
+          $changes = Get-Content notes/changes.txt | ForEach-Object { "- $_" }
+          $previous = Get-Content notes/previous.txt -Raw
+          $compare = if ($previous) { " · [All changes since $previous](https://github.com/$env:GITHUB_REPOSITORY/compare/$previous...$tag)" } else { '' }
+          $play = "https://play.google.com/store/apps/details?id=$env:PACKAGE_NAME"
+          $notes = @(
+            "## What's new"
+            $changes
+            ''
+            '## Install'
+            "**[Get it on Google Play]($play)**, or download the ``.apk`` below and open it (Android 10 or later)."
+            'To update, install the new `.apk` over the old one: your patterns and call log are kept. The Play version'
+            'and the `.apk` are signed with the same key, so either can update the other.'
+            ''
+            "Build $env:VERSION_CODE$compare"
+          ) -join "`n"
           gh release create $tag dist/*.apk --target $env:GITHUB_SHA `
-            --title "Call Guard $env:VERSION" --notes $notes --generate-notes
+            --title "Call Guard $env:VERSION" --notes $notes
           if ($LASTEXITCODE -ne 0) { throw "Couldn't create the $tag release" }
 
-      # "What's new" on Play: the merged pull request's title (the second paragraph of GitHub's merge
-      # commit message), or the commit's own subject for a direct push or a squash merge.
+      # "What's new" on Play: the same list without the pull request numbers. Play allows 500 characters.
       - name: Write Play release notes
         if: vars.PLAY_TRACK != ''
         run: |
-          $subject = git log -1 --format=%s
-          $notes = if ($subject -like 'Merge pull request*') {
-            (git log -1 --format=%b) | Where-Object { $_.Trim() } | Select-Object -First 1
-          }
-          if (-not $notes) { $notes = $subject }
+          $notes = (Get-Content notes/changes.txt | ForEach-Object { '• ' + ($_ -replace ' \(#\d+\)$', '') }) -join "`n"
           if ($notes.Length -gt 500) { $notes = $notes.Substring(0, 497) + '...' }
           New-Item -ItemType Directory -Force whatsnew | Out-Null
           Set-Content -Path whatsnew/whatsnew-en-US -Value $notes -NoNewline -Encoding utf8NoBOM
