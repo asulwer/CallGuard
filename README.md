@@ -10,14 +10,22 @@ as usual.
 is described in [BUILD.md](BUILD.md).
 
 ## Install
-1. On your Android phone (Android 10 or later), open **https://github.com/asulwer/CallGuard/releases**.
+<a href="https://play.google.com/store/apps/details?id=com.acclscompany.callguard"><img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80"></a>
+
+Install Call Guard from **[Google Play](https://play.google.com/store/apps/details?id=com.acclscompany.callguard)** (Android 10 or later). Play keeps it up to date.
+
+**Or install the `.apk` directly:**
+1. On your phone, open **https://github.com/asulwer/CallGuard/releases**.
 2. Download the `.apk` from the latest release and open it.
 3. When Android asks, allow your browser or Files app to install apps. Google Play Protect may warn about
    an app from an unknown developer; choose **Install anyway**.
 
-**Updating:** install the newer `.apk` the same way, over the old one. Your patterns and call log are kept.
-Afterwards you can switch "install unknown apps" off again under Settings → Apps → Special app access →
-**Install unknown apps**.
+**Updating the `.apk`:** install the newer `.apk` the same way, over the old one. Your patterns and call
+log are kept. Afterwards you can switch "install unknown apps" off again under Settings → Apps → Special
+app access → **Install unknown apps**.
+
+The Google Play version and the `.apk` are the same app, signed with the same key, so either can update
+the other — no need to uninstall to switch.
 
 ## First-time setup
 Open Call Guard. The **Home** tab shows what still needs doing:

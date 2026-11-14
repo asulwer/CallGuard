@@ -7,7 +7,7 @@ nav_order: 2
 # Install
 {: .no_toc }
 
-Call Guard isn't in the Google Play Store. You install it directly from its
+Get Call Guard from [Google Play](https://play.google.com/store/apps/details?id=com.acclscompany.callguard), or install the `.apk` directly from its
 [GitHub releases](https://github.com/asulwer/CallGuard/releases).
 {: .fs-6 .fw-300 }
 
@@ -16,9 +16,21 @@ Call Guard isn't in the Google Play Store. You install it directly from its
 
 ---
 
-## Install
+## Install from Google Play
 
 You need an Android phone with **Android 10 or later**.
+
+<a href="https://play.google.com/store/apps/details?id=com.acclscompany.callguard"><img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80"></a>
+
+Open **[Call Guard on Google Play](https://play.google.com/store/apps/details?id=com.acclscompany.callguard)** on your phone and tap **Install**. Play installs updates
+automatically.
+
+Then [set Call Guard up](setup.html) — it does nothing until you do.
+
+## Install the .apk instead
+{: #install-the-apk-instead }
+
+If you'd rather not use Google Play, install the same app directly from GitHub:
 
 1. On the phone, open **[the latest release](https://github.com/asulwer/CallGuard/releases/latest)**.
 2. Under **Assets**, tap the file named `CallGuard-<version>.apk` to download it.
@@ -44,12 +56,17 @@ The version is shown at the bottom of Call Guard's **Home** tab, for example `Ca
 
 ## Update
 
-Install the newer `.apk` the same way, over the old one — no need to uninstall first. Your patterns,
-their on/off state and the call log are kept, and Call Guard stays set up.
+- **From Google Play:** updates install automatically, or tap **Update** on Call Guard's Play page.
+- **The .apk:** install the newer `.apk` the same way, over the old one — no need to uninstall first.
+
+Either way your patterns, their on/off state and the call log are kept, and Call Guard stays set up.
+
+The Google Play version and the `.apk` are the same app signed with the same key, so you can switch
+between them at any time by installing one over the other.
 
 {: .warning }
 If Android says **App not installed** when updating, the new file was signed with a different key than
-the copy on your phone (for example, a copy you built yourself). Export your patterns
+the copy on your phone — for example, a copy you built yourself. Export your patterns
 ([Backup](using.html#backup)), uninstall the old copy, install the new one and import your patterns again.
 
 ## Uninstall
