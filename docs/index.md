@@ -11,7 +11,8 @@ description: "Call Guard blocks unwanted calls on Android by area code, country 
 Block unwanted calls by area code, country or region — the people in your contacts always get through.
 {: .fs-6 .fw-300 }
 
-[Download the latest version](https://github.com/asulwer/CallGuard/releases/latest){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Get it on Google Play](https://play.google.com/store/apps/details?id=com.acclscompany.callguard){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Download the .apk](https://github.com/asulwer/CallGuard/releases/latest){: .btn .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [Get started](install.html){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 ---
